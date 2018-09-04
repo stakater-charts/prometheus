@@ -5,7 +5,7 @@ version: 1.0.22
 keywords:
   - prometheus
   - kubernetes
-home: https://github.com/stakater/chart-prometheus
+home: https://github.com/stakater-charts/prometheus
 maintainers:
 - name: Stakater
   email: stakater@aurorasolutions.io
