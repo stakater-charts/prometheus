@@ -1,5 +1,5 @@
 prometheus:
-  name: monitoring  
+  name: monitoring
   labels:
     group: com.stakater.platform
     provider: stakater
@@ -9,8 +9,14 @@ prometheus:
   alertmanager:
     name: alertmanager-main
     namespace: monitoring    # if using alertmanager from any other namespace, use name of that namespace
+  
+  # Add additional configs, default to false
+
+  # additionalScrapeConfigs:
+  #   name: additional-scrape-configs
+  #   key: prometheus-additional.yaml
   prometheusK8s:
-  # The prometheusName name is used as label on the Pod made by PO and in the service selector
+  # The prometheusName name is used as label on the Pod made by PO and in the service selector    
     prometheusName: k8s
     prometheusLabel: monitoring-k8s
     replicas: 2
