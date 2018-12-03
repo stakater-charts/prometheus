@@ -82,3 +82,9 @@ spec:
     - namespace: {{ .Values.prometheus.alertmanager.namespace }}
       name: {{ .Values.prometheus.alertmanager.name }}
       port: web
+  {{- if .Values.prometheus.additionalScrapeConfigs }}
+  additionalScrapeConfigs:
+    name: {{ .Values.prometheus.additionalScrapeConfigs.name }}
+    key: {{ .Values.prometheus.additionalScrapeConfigs.key }}
+  {{- end }}
+  
