@@ -23,6 +23,13 @@ spec:
     {{- range .Values.prometheus.prometheusK8s.serviceMonitorExpressions }}
     - {{ . }}
     {{- end }}
+  {{- if .Values.prometheus.prometheusK8s.serviceMonitorNamespacesExpressions }}
+  serviceMonitorNamespaceSelector:
+    matchExpressions:
+    {{- range .Values.prometheus.prometheusK8s.serviceMonitorNamespacesExpressions }}
+    - {{ . }}
+    {{- end }}
+  {{- end }}
   ruleSelector:
     matchLabels:
       prometheus: {{ .Values.prometheus.prometheusK8s.prometheusLabel }}
