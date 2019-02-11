@@ -12,6 +12,9 @@ metadata:
 {{ include "prometheus.labels.chart" . | indent 4 }}
 spec:
   replicas: {{ .Values.prometheus.prometheusK8s.replicas }}
+  {{- if .Values.prometheus.image.name }}
+  baseImage: {{ .Values.prometheus.image.name }}
+  {{- end }}
   version: {{ .Values.prometheus.image.tag }}
   externalUrl: {{ .Values.prometheus.prometheusK8s.externalUrl }}
   {{- if .Values.prometheus.clearSecurityContext }}
