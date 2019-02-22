@@ -11,6 +11,10 @@ metadata:
 {{ include "prometheus.labels.stakater" . | indent 4 }}
 {{ include "prometheus.labels.chart" . | indent 4 }}
 spec:
+  {{- if .Values.prometheus.tolerations }}
+  tolerations:
+{{ toYaml .Values.prometheus.tolerations | indent 4 -}}
+  {{- end }}
   replicas: {{ .Values.prometheus.prometheusK8s.replicas }}
   {{- if .Values.prometheus.image.name }}
   baseImage: {{ .Values.prometheus.image.name }}
