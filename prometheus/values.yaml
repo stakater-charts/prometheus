@@ -1,15 +1,16 @@
 prometheus:
-  name: monitoring
+  tolerations: {}
+  name: monitoring      
   labels:
     group: com.stakater.platform
     provider: stakater
-    version: 2.2.0-rc.0  
+    version: 2.2.0-rc.0
   image:
     tag: v2.2.0-rc.0  
   alertmanager:
     name: alertmanager-main
     namespace: monitoring    # if using alertmanager from any other namespace, use name of that namespace
-  
+      
   # Add additional configs, default to false
 
   # additionalScrapeConfigs:
@@ -21,7 +22,7 @@ prometheus:
     prometheusLabel: monitoring-k8s
     replicas: 2
     externalUrl: http://127.0.0.1:9090
-    # nodeSelector:
+    nodeSelector: {}
       # key: failure-domain.beta.kubernetes.io/zone
       # value: us-west-2a    
     serviceMonitorExpressions:
@@ -33,32 +34,24 @@ prometheus:
     #     cpu: "0.5"
     #   limits:
     #     memory: "1.5Gi"
-    #     cpu: "1"
+    #     cpu: "1" 
     storage:
       class: ssd
       annotations:
       resources:
         requests:
           storage: 40Gi
-  clearSecurityContext: false
+  clearSecurityContext: false     # Set to true if deploying in Openshift,
   service:
-    expose: "true"
-    annotations:
-      config.xposer.stakater.com/Domain: stackator.com
-      config.xposer.stakater.com/IngressNameTemplate: '{{.Service}}-{{.Namespace}}'
-      config.xposer.stakater.com/IngressURLTemplate: '{{.Service}}.{{.Namespace}}.{{.Domain}}'
-      config.xposer.stakater.com/TLS: "true"
-      xposer.stakater.com/annotations: |-
-        kubernetes.io/ingress.class: internal-ingress
-        ingress.kubernetes.io/force-ssl-redirect: true
-        certmanager.k8s.io/cluster-issuer: letsencrypt-production
+    expose: "true"     
+    annotations: {}
   # storageclass:
   #   isDefaultClass: "false"
   #   provisioner: kubernetes.io/aws-ebs 
   #   parameters:
   #     zone: us-west-2a
   #     type: gp2
-  #   annotations:
+  #   annotations: 
   configmap:
     data:
       alertmanager.rules: |+
@@ -104,6 +97,7 @@ prometheus:
             for: 3m
             labels:
               severity: critical
+              kind: infra
             annotations:
               description: If one more etcd member goes down the cluster will be unavailable
               summary: etcd cluster insufficient members
@@ -112,6 +106,7 @@ prometheus:
             for: 1m
             labels:
               severity: critical
+              kind: infra
             annotations:
               description: etcd member {{ $labels.instance }} has no leader
               summary: etcd member has no leader
@@ -119,6 +114,7 @@ prometheus:
             expr: increase(etcd_server_leader_changes_seen_total{job="etcd"}[1h]) > 3
             labels:
               severity: warning
+              kind: infra
             annotations:
               description: etcd instance {{ $labels.instance }} has seen {{ $value }} leader
                 changes within the last hour
@@ -129,6 +125,7 @@ prometheus:
             for: 10m
             labels:
               severity: warning
+              kind: infra
             annotations:
               description: '{{ $value }}% of requests for {{ $labels.grpc_method }} failed
                 on etcd instance {{ $labels.instance }}'
@@ -139,6 +136,7 @@ prometheus:
             for: 5m
             labels:
               severity: critical
+              kind: infra
             annotations:
               description: '{{ $value }}% of requests for {{ $labels.grpc_method }} failed
                 on etcd instance {{ $labels.instance }}'
@@ -149,6 +147,7 @@ prometheus:
             for: 10m
             labels:
               severity: critical
+              kind: infra
             annotations:
               description: on etcd instance {{ $labels.instance }} gRPC requests to {{ $labels.grpc_method
                 }} are slow
@@ -159,6 +158,7 @@ prometheus:
             for: 10m
             labels:
               severity: warning
+              kind: infra
             annotations:
               description: '{{ $value }}% of requests for {{ $labels.method }} failed on etcd
                 instance {{ $labels.instance }}'
@@ -169,6 +169,7 @@ prometheus:
             for: 5m
             labels:
               severity: critical
+              kind: infra
             annotations:
               description: '{{ $value }}% of requests for {{ $labels.method }} failed on etcd
                 instance {{ $labels.instance }}'
@@ -179,6 +180,7 @@ prometheus:
             for: 10m
             labels:
               severity: warning
+              kind: infra
             annotations:
               description: on etcd instance {{ $labels.instance }} HTTP requests to {{ $labels.method
                 }} are slow
@@ -189,6 +191,7 @@ prometheus:
             for: 10m
             labels:
               severity: warning
+              kind: infra
             annotations:
               description: etcd instance {{ $labels.instance }} member communication with
                 {{ $labels.To }} is slow
@@ -197,6 +200,7 @@ prometheus:
             expr: increase(etcd_server_proposals_failed_total{job="etcd"}[1h]) > 5
             labels:
               severity: warning
+              kind: infra
             annotations:
               description: etcd instance {{ $labels.instance }} has seen {{ $value }} proposal
                 failures within the last hour
@@ -207,6 +211,7 @@ prometheus:
             for: 10m
             labels:
               severity: warning
+              kind: infra
             annotations:
               description: etcd instance {{ $labels.instance }} fync durations are high
               summary: high fsync durations
@@ -216,6 +221,7 @@ prometheus:
             for: 10m
             labels:
               severity: warning
+              kind: infra
             annotations:
               description: etcd instance {{ $labels.instance }} commit durations are high
               summary: high commit durations
@@ -224,10 +230,10 @@ prometheus:
         - name: pods.rules
           rules:
           - alert: PodsDown
-            expr: kube_pod_info{created_by_kind!="Job"} == 1 and ON(pod) kube_pod_status_phase{phase!="Pending"} == 1 and ON(pod) kube_pod_status_ready{condition="false"} == 1
-            for: 1s
+            expr: kube_pod_info{created_by_kind!="Job"} == 1 and ON(pod) kube_pod_status_ready{condition="false"} == 1 and on(pod) kube_pod_container_status_waiting > 0
+            for: 5m
             labels:
-              severity: critical
+              severity: critical                
             annotations:
               description: '{{ $labels.pod }} from {{ $labels.namespace }} is red.'
               summary: Pods are down
@@ -323,13 +329,14 @@ prometheus:
           rules:
           - alert: K8SApiServerLatency
             expr: histogram_quantile(0.99, sum(apiserver_request_latencies_bucket{subresource!="log",verb!~"CONNECT|WATCHLIST|WATCH|PROXY"})
-              WITHOUT (instance, resource)) / 1e+06 > 1
+              WITHOUT (instance, resource)) / 1e+06 > 10
             for: 10m
             labels:
               severity: warning
+              kind: infra
             annotations:
               description: 99th percentile Latency for {{ $labels.verb }} requests to the
-                kube-apiserver is higher than 1s.
+                kube-apiserver is higher than 10s.
               summary: Kubernetes apiserver latency is high
       kubelet.rules: |+
         groups:
@@ -337,9 +344,10 @@ prometheus:
           rules:
           - alert: K8SNodeNotReady
             expr: kube_node_status_condition{condition="Ready",status="true"} == 0
-            for: 1h
+            for: 5m
             labels:
               severity: warning
+              kind: infra
             annotations:
               description: The Kubelet on {{ $labels.node }} has not checked in with the API,
                 or has set itself to NotReady, for more than an hour
@@ -351,24 +359,27 @@ prometheus:
             for: 1m
             labels:
               severity: critical
+              kind: infra
             annotations:
               description: '{{ $value }} Kubernetes nodes (more than 10% are in the NotReady
                 state).'
               summary: Many Kubernetes nodes are Not Ready
           - alert: K8SKubeletDown
             expr: count(up{job="kubelet"} == 0) / count(up{job="kubelet"}) > 0.03
-            for: 1h
+            for: 5m
             labels:
               severity: warning
+              kind: infra
             annotations:
               description: Prometheus failed to scrape {{ $value }}% of kubelets.
               summary: Many Kubelets cannot be scraped
           - alert: K8SKubeletDown
             expr: absent(up{job="kubelet"} == 1) or count(up{job="kubelet"} == 0) / count(up{job="kubelet"})
               > 0.1
-            for: 1h
+            for: 5m
             labels:
               severity: critical
+              kind: infra
             annotations:
               description: Prometheus failed to scrape {{ $value }}% of kubelets, or all Kubelets
                 have disappeared from service discovery.
@@ -377,6 +388,7 @@ prometheus:
             expr: kubelet_running_pod_count > 100
             labels:
               severity: warning
+              kind: infra
             annotations:
               description: Kubelet {{$labels.instance}} is running {{$value}} pods, close
                 to the limit of 110
@@ -552,7 +564,7 @@ prometheus:
             expr: increase(kube_pod_container_status_restarts_total[1h]) > 5
             for: 10m
             labels:
-              severity: warning
+              severity: warning                
             annotations:
               description: Pod {{$labels.namespaces}}/{{$labels.pod}} is was restarted {{$value}}
                 times within the last hour
@@ -566,6 +578,7 @@ prometheus:
             for: 10m
             labels:
               severity: warning
+              kind: infra
             annotations:
               description: Prometheus could not scrape a node-exporter for more than 10m,
                 or node-exporters have disappeared from discovery.
@@ -575,6 +588,7 @@ prometheus:
             labels:
               service: k8s
               severity: critical
+              kind: infra
             annotations:
               description: '{{ $labels.node }} has run out of disk space.'
               summary: Node ran out of disk space.
@@ -584,6 +598,7 @@ prometheus:
             labels:
               service: k8s
               severity: warning
+              kind: infra
             annotations:
               description: '{{ $labels.node }} is under memory pressure.'
               summary: Node is under memory pressure.
@@ -592,6 +607,7 @@ prometheus:
             labels:
               service: k8s
               severity: warning
+              kind: infra
             annotations:
               description: '{{ $labels.node }} is under disk pressure.'
               summary: Node is under disk pressure.
@@ -600,6 +616,7 @@ prometheus:
             for: 30m
             labels:
               severity: warning
+              kind: infra
             annotations:
               summary: "{{$labels.instance}}: High CPU usage detected"
               description: "{{$labels.instance}}: CPU usage is above 90% (current value is: {{ $value }})"
@@ -608,6 +625,7 @@ prometheus:
             for: 30m
             labels:
               severity: warning
+              kind: infra
             annotations:
               summary: "{{$labels.instance}}: High memory usage detected"
               description: "{{$labels.instance}}: Memory usage is above 90% (current value is: {{ $value }})"
