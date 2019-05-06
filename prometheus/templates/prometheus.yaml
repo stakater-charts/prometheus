@@ -11,6 +11,10 @@ metadata:
 {{ include "prometheus.labels.stakater" . | indent 4 }}
 {{ include "prometheus.labels.chart" . | indent 4 }}
 spec:
+{{- if .Values.prometheus.extraSecrets }}
+  secrets:
+{{ toYaml .Values.prometheus.extraSecrets | indent 4 }}
+{{- end }}
   {{- if .Values.prometheus.tolerations }}
   tolerations:
 {{ toYaml .Values.prometheus.tolerations | indent 4 -}}
