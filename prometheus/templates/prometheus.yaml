@@ -43,10 +43,12 @@ spec:
     - {{ . }}
     {{- end }}
   {{- end }}
+  {{- if .Values.prometheus.prometheusK8s.ruleSelector }}
   ruleSelector:
     matchLabels:
       prometheus: {{ .Values.prometheus.prometheusK8s.prometheusLabel }}
 {{ include "prometheus.labels.selector" . | indent 6 }}
+  {{- end }}
   {{- if .Values.prometheus.prometheusK8s.nodeSelector }}  
   nodeSelector:
     {{ .Values.prometheus.prometheusK8s.nodeSelector.key }}: {{ .Values.prometheus.prometheusK8s.nodeSelector.value }}
