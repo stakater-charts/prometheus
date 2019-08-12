@@ -55,6 +55,7 @@ prometheus:
   #     zone: us-west-2a
   #     type: gp2
   #   annotations: 
+  customConfiguration: {}
   configmap:
     data:
       alertmanager.rules: |+
