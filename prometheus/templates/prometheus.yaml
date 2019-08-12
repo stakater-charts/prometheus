@@ -29,11 +29,13 @@ spec:
   securityContext: {}
   {{- end }}
   serviceAccountName: {{ template "prometheus.name" . }}-k8s
+  {{- if .Values.prometheus.prometheusK8s.serviceMonitorSelector }}
   serviceMonitorSelector:
     matchExpressions:
     {{- range .Values.prometheus.prometheusK8s.serviceMonitorExpressions }}
     - {{ . }}
     {{- end }}
+  {{- end }}
   {{- if .Values.prometheus.prometheusK8s.serviceMonitorNamespacesExpressions }}
   serviceMonitorNamespaceSelector:
     matchExpressions:
