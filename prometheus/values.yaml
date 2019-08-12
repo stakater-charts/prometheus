@@ -26,6 +26,7 @@ prometheus:
     nodeSelector: {}
       # key: failure-domain.beta.kubernetes.io/zone
       # value: us-west-2a    
+    serviceMonitorSelector: true
     serviceMonitorExpressions:
       - "{key: k8s-app, operator: Exists}"
     retention: 168h
